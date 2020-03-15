@@ -3,13 +3,13 @@ import pickle
 from scipy.optimize import minimize_scalar
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score,mean_squared_error
 from sklearn.utils.extmath import safe_sparse_dot
 from time import strftime, gmtime
 
 class DAN2Regressor(object):
 
-    def __init__(self, depth=10, bounds=(0,5000000000)):
+    def __init__(self, depth=10, bounds=(0,500)):
         self.bounds = bounds
         self.depth = depth
         self.lin_predictor = LinearRegression(fit_intercept=True)
@@ -37,18 +37,19 @@ class DAN2Regressor(object):
         cols = X.shape[1]
 
         """ Create resultant vector of ones """
-        R = np.ones(cols)
+        # R = np.ones(cols)
+        R = np.random.rand(cols)
         #print('R', R.shape)
 
         """ Compute dot product """
-        X_dot_R = (1 + np.dot(X,R))
+        X_dot_R = ( np.dot(X,R) )#+1)
         #print('XdR', X_dot_R.shape)
         X_dot_R = X_dot_R.reshape((len(X),))
         #print('XdR', X_dot_R.shape)
 
         """ Compute X and R magnitudes """
-        X_mag = np.sqrt(1*1 + np.sum(np.square(X), axis=1))
-        R_mag = np.sqrt(np.sum(R**2) + 1*1)
+        X_mag = np.sqrt(np.sum(np.square(X), axis=1))#+ 1*1 )
+        R_mag = np.sqrt(np.sum(R**2) )#+ 1*1)
 
         """ Compute arccosine """
         acos = np.arccos(X_dot_R / (X_mag * R_mag))
@@ -101,7 +102,7 @@ class DAN2Regressor(object):
         self.lin_predictions = f_k
         """ Start fit algorithm """
         i = 1
-        mu = 1
+        mu = np.random.random()#1
         while (i <= self.depth):
             if i==1:
                 Xn = self.build_X1(f_k, alpha)
@@ -119,8 +120,9 @@ class DAN2Regressor(object):
 
             # Error metrics
             mse = self.mse(f_k, y, m)
-            pred = np.where(f_k >= 0.5, 1, 0)
-            acc = accuracy_score(y, pred)
+            # pred = np.where(f_k >= 0.5, 1, 0)
+            ## acc=mean_squared_error(y,pred)
+            # acc = accuracy_score(y, pred)
             
             # Save layer
             coef_ = A.reshape((1,3))
@@ -130,10 +132,10 @@ class DAN2Regressor(object):
             self.logging(coef_)
 
             # add layers
-            print('Iteration:', i, " Mu:", mu, "MSE:", mse, "Accuracy:", acc)
+            print('Iteration:', i, " Mu:", mu, "MSE:", mse, 'fk:', f_k)#, "Accuracy:", acc)
 
             i += 1
-        return f_k
+        return f_k, mse
 
     def minimize(self, f_k, A, a, alpha):
         self.f_k = f_k
