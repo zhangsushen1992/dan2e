@@ -1,6 +1,6 @@
-'''
-Codes for dropout
-'''
+"""
+Multitask learning
+"""
 
 import numpy as np
 import pickle
@@ -91,6 +91,13 @@ class DAN2Regressor(object):
             self.coef_ = np.vstack((self.coef_ , coef_))
 
 
+    def multi_logging(self, coef_,head_number):
+        if self.multi_coef_[head_number] is None:
+            self.multi_coef_ [head_number]= coef_.reshape(1,5)
+
+        else:
+            self.multi_coef_[head_number] = np.vstack((self.multi_coef_[head_number] , coef_))
+
     """ Fit method  """
     def fit(self, X, y):
 
@@ -158,7 +165,7 @@ class DAN2Regressor(object):
         A = coef_[1:]
         return safe_sparse_dot(X, A.T, dense_output=True) + intercept
 
-    def predict(self, X_test):
+    def predict(self, X_test, head_number):
         X = X_test
         m = X.shape[0]
         alpha = self.compute_alpha(X)
@@ -175,22 +182,48 @@ class DAN2Regressor(object):
                 X = np.hstack((prev_coef_[2]*f_k, prev_coef_[3]*np.cos(alpha*mu), prev_coef_[4]*np.sin(alpha*mu)))
                 f_k = self._activation_function(X, coef_[1:])
                 f_k = f_k.reshape(m,1)
-
             i += 1
             prev_coef_ = coef_
+
+        for multi_coef_ in self.multi_coef_[head_number]:
+            mu = multi_coef_[0]
+            if i == 0:
+                X = np.hstack((f_k, np.cos(alpha*mu), np.sin(alpha*mu)))
+                f_k = self._activation_function(X, multi_coef_[1:])
+                f_k = f_k.reshape(m,1)
+            else:
+                X = np.hstack((prev_multi_coef_[2]*f_k, prev_multi_coef_[3]*np.cos(alpha*mu), prev_multi_coef_[4]*np.sin(alpha*mu)))
+                f_k = self._activation_function(X, prev_multi_coef_[1:])
+                f_k = f_k.reshape(m,1)
+            prev_multi_coef_=multi_coef_
+            i += 1
+
         return f_k
 
-    def dropout(self, dropout_probability):
-        for layer in range (len(self.coef_)):
-            for neuron in range (1,5):
-                random_number = np.random.random()
-                if random_number > dropout_probability:
-                    self.coef_[layer][neuron]=0
-                    print('DROP-----------------------------',dropout_probability)
 
+    def multihead(self, X, y, head_depth,head_number, prev_f_k):
+    	alpha = self.compute_alpha(X)
+    	f_k, i = prev_f_k, 0
 
-    def plot_error():
-        pass
-
-    
+        while i <= head_depth:
+            if i==1:
+                Xn = self.build_X1(f_k, alpha)
+                lr = LinearRegression(fit_intercept=True).fit(Xn, y)
+                A = lr.coef_[0]
+                a = lr.intercept_
+                f_k = lr.predict(Xn)
+            else:
+                mu = self.minimize(f_k, A, a, alpha)
+                Xn = self.build_Xn(f_k, A, alpha, mu) # eventually override the build_X1 method
+                lr = LinearRegression(fit_intercept=True).fit(Xn, y)
+                A = lr.coef_[0]
+                a = lr.intercept_
+                f_k = lr.predict(Xn) 
+            mse = self.mse(f_k, y, m)
+            multi_coef_ = A.reshape((1,3))
+            multi_coef_ = np.insert(multi_coef_, 0, a)
+            multi_coef_ = np.insert(multi_coef_, 0, mu)
+            self.multi_logging(multi_coef_,head_number)
+            i+=1
+        return mse, f_k 
 

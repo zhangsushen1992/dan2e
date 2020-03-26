@@ -38,7 +38,7 @@ def main(X, X_test, y_train, y_test, depth,dropout_prob=0.95):
     y_pred = clf.predict(X_test)
     mse = np.sum((y_pred - y_test)**2) / X_test.shape[0]
 
-    perc_error=sum(np.abs((y_pred-y_test)/y_test))/(3264*0.3)
+    perc_error=sum(np.abs((y_pred-y_test)/y_test))/(X_test.shape[0])
     return perc_error, mse,y_pred
 
 
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     y= (y-y.min())/(y.max()-y.min())
    
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=13)
     # X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.30, random_state=42)
 
     y_train = y_train[:,0]
@@ -60,23 +60,34 @@ if __name__ == '__main__':
     y_train = y_train.reshape(len(y_train), 1)
     y_test = y_test.reshape(len(y_test),1)
 
-    mse_list =[]
-    perc_error_list=[]
-    for dropout_prob in range(1,11):
-        perc_error, mse, y_pred=main(X_train, X_test, y_train,y_test,33,dropout_prob/10)
-        mse_list.append(mse)
-        perc_error_list.append(perc_error)
+    mse_list =[0]*11
+    perc_error_list=[0]*11
+  
+    for _ in range (10):
+        for dropout_prob in range(1,11):
+            perc_error, mse, y_pred=main(X_train, X_test, y_train,y_test,33,dropout_prob/10)
+            mse_list[dropout_prob]+=mse
+            perc_error_list[dropout_prob]+=perc_error
+    mse_list=[mse/10 for mse in mse_list]
+    mse_list.pop(0)
+    perc_error_list =[perc/10 for perc in perc_error_list]
+    perc_error_list.pop(0)
 
-    plt.plot(mse_list,lw=0.5,c='b')
-    plt.xlabel('Dropout Rate (x0.1)')
+    print(mse_list)
+    print(perc_error_list)
+
+    x_dropout=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
+    plt.plot(x_dropout,mse_list[::-1],lw=0.5,c='b')
+    plt.xlabel('Dropout Rate')
     plt.ylabel('Mean Squared Error')
+    plt.xlim(left=0, right=0.9)
     plt.title('Prediction Error vs Dropout Rate')
     plt.show()
 
-    plt.plot(perc_error_list,lw=0.5,c='b')
-    plt.xlabel('Dropout Rate (x0.1)')
+    plt.plot(x_dropout, perc_error_list[::-1],lw=0.5,c='b')
+    plt.xlabel('Dropout Rate')
     plt.ylabel('Average Percentage Error')
-    plt.title('Prediction Accuracy vs Dropout Rate')
+    plt.title('Prediction Error vs Dropout Rate')
     plt.show()
 
     plt.plot(y_pred,lw=0.5,c='b',label='Predicted Values of the Recovery Rate')

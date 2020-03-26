@@ -1,7 +1,3 @@
-'''
-Codes for dropout
-'''
-
 import numpy as np
 import pickle
 from scipy.optimize import minimize_scalar
@@ -132,11 +128,13 @@ class DAN2Regressor(object):
             coef_ = A.reshape((1,3))
             coef_ = np.insert(coef_, 0, a)
             coef_ = np.insert(coef_, 0, mu)
+            # if coef_[1]>1:
+            #     coef_[1]=1
             print(i, coef_)
             self.logging(coef_)
 
             # add layers
-            print('Iteration:', i, " Mu:", mu, "MSE:", mse, 'fk:', f_k)#, "Accuracy:", acc)
+            print('Iteration:', i, " Mu:", mu, "a:",coef_[1], "MSE:", mse, 'fk:', f_k)#, "Accuracy:", acc)
 
             i += 1
         return f_k, mse
@@ -180,14 +178,11 @@ class DAN2Regressor(object):
             prev_coef_ = coef_
         return f_k
 
-    def dropout(self, dropout_probability):
-        for layer in range (len(self.coef_)):
-            for neuron in range (1,5):
-                random_number = np.random.random()
-                if random_number > dropout_probability:
-                    self.coef_[layer][neuron]=0
-                    print('DROP-----------------------------',dropout_probability)
-
+    def bound_c(self):
+        for layer in range(len(self.coef_)):
+            a=self.coef_[layer][1]
+            if a > 1:
+                self.coef_[layer][1]=1
 
     def plot_error():
         pass
