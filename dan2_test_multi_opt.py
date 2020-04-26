@@ -12,7 +12,10 @@ import sys
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
-TOLERANCE=0.75
+TOLERANCE=0.1
+TOLERANCE_ts_1=0.1
+TOLERANCE_ts_2=0.1
+TOLERANCE_ts_3=0.1
 
 def load_file(path):
     with open(path, 'rb') as f:
@@ -79,22 +82,47 @@ if __name__ == '__main__':
     X_train_total = np.vstack((X_train, X_train, X_train))
     X_test_total = np.vstack((X_test, X_test, X_test))
     
-    mse_list = []
-    sse=np.inf
-    
+    sse_list = []
+    sse=1
+    sse_prev=0.01
+    sse_ts=1
+    sse_prev_ts=0.01
+    xi_sh=0
+    xi_ts=0
     f = dan2.add_layer(X_train_total,y_train_total,isFirstLayer=True)
     while sse>TOLERANCE:
         while (sse - sse_prev)/sse_prev > TOLERANCE_1:
+            sse_prev = sse
             f = dan2.add_layer(X_train_total, y_train_total, False, f)
             sse = np.sum(f-y_train_total)**2
-    
-    mse_1, fk_1 = multi(X_train, y_train_1, 10, 0, f_k, clf)
-    mse_2, fk_2 = multi(X_train, y_train_2, 20, 1, f_k, clf)
-    mse_3, fk_3 = multi(X_train, y_train_3, 20, 2, f_k, clf)
-    mse_list.append((mse_1,mse_2,mse_3))
-    tst_mse_1, perc_error_1 = test(X_test_total, y_test_total, 0, clf)
-    tst_mse_2, perc_error_2 = test(X_test_total, y_test_total, 1, clf)
-    tst_mse_3, perc_error_3 = test(X_test_total, y_test_total, 2,clf)
-    print("training mse", mse_1, mse_2, mse_3)
-    print("MSE",  tst_mse_1,tst_mse_2,tst_mse_3)
-    print("APE ", perc_error_1, perc_error_2, perc_error_3)
+            sse_list.append(sse)
+            xi_sh = xi_sh+1
+            print('Number of shared layers is', xi_sh)
+        while (sse_1-sse_prev_1)/sse_prev_1>TOLERANCE_ts_1:
+            sse_prev_1=sse_1
+            f_ts_1 = dan2.add_layer_multihead(X_train, y_trian_1,0, f)
+            sse_1 = np.sum(f_ts_1-y_train_1)**2
+            xi_1 = xi_1+1
+            print('Number of layers for Task 1 is', xi_1)
+        while (sse_2-sse_prev_2)/sse_prev_2>TOLERANCE_ts_2:
+            sse_prev_2=sse_1
+            f_ts_2 = dan2.add_layer_multihead(X_train, y_trian_2,0, f)
+            sse_2 = np.sum(f_ts_2-y_train_2)**2
+            xi_2 = xi_2+1
+            print('Number of layers for Task 2 is', xi_2)
+        while (sse_3-sse_prev_3)/sse_prev_3>TOLERANCE_ts_3:
+            sse_prev_3=sse_3
+            f_ts_3 = dan2.add_layer_multihead(X_train, y_trian_3,0, f)
+            sse_3 = np.sum(f_ts_3-y_train_3)**2
+            xi_3 = xi_3+1
+            print('Number of layers for Task 3 is', xi_3)
+    plt.plot(sse_list)
+
+
+    # mse_list.append((mse_1,mse_2,mse_3))
+    # tst_mse_1, perc_error_1 = test(X_test_total, y_test_total, 0, clf)
+    # tst_mse_2, perc_error_2 = test(X_test_total, y_test_total, 1, clf)
+    # tst_mse_3, perc_error_3 = test(X_test_total, y_test_total, 2,clf)
+    # print("training mse", mse_1, mse_2, mse_3)
+    # print("MSE",  tst_mse_1,tst_mse_2,tst_mse_3)
+    # print("APE ", perc_error_1, perc_error_2, perc_error_3)

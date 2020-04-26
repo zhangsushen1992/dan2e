@@ -23,6 +23,7 @@ class DAN2Regressor(object):
         self.lin_predictor = LinearRegression(fit_intercept=True)
         self.coef_ = None
         self.multi_coef_ = [None]*3
+        self.alpha=0
         self.name = strftime('dan2model-' + str(depth) +
                              '-%Y-%b-%d-%H-%M-%S', gmtime())
         #self.lin_predictions = None
@@ -207,39 +208,39 @@ class DAN2Regressor(object):
 
         return f_k
 
-    def multihead(self, X, y, head_depth, head_number, prev_f_k):
-        m = X.shape[0]
-        alpha = self.compute_alpha(X)
-        f_k, i = prev_f_k[head_number*1654:(head_number+1)*1654], 1
-        print('-'*20, f_k)
-        mu = np.random.random()
-        while i <= head_depth:
-            if i == 1:
-                Xn = self.build_X1(f_k, alpha)
-                lr = LinearRegression(fit_intercept=True).fit(Xn, y)
-                A = lr.coef_[0]
-                a = lr.intercept_
-                f_k = lr.predict(Xn)
-            else:
-                mu = self.minimize(f_k, A, a, alpha)
-                # eventually override the build_X1 method
-                Xn = self.build_Xn(f_k, A, alpha, mu)
-                lr = LinearRegression(fit_intercept=True).fit(Xn, y)
-                A = lr.coef_[0]
-                a = lr.intercept_
-                f_k = lr.predict(Xn)
-            mse = self.mse(f_k, y, m)
-            multi_coef_ = A.reshape((1, 3))
-            multi_coef_ = np.insert(multi_coef_, 0, a)
-            multi_coef_ = np.insert(multi_coef_, 0, mu)
-            self.multi_logging(multi_coef_, head_number)
-            i += 1
-        return mse, f_k
+    # def multihead(self, X, y, head_depth, head_number, prev_f_k):
+    #     m = X.shape[0]
+    #     alpha = self.compute_alpha(X)
+    #     f_k, i = prev_f_k[head_number*1654:(head_number+1)*1654], 1
+    #     print('-'*20, f_k)
+    #     mu = np.random.random()
+    #     while i <= head_depth:
+    #         if i == 1:
+    #             Xn = self.build_X1(f_k, alpha)
+    #             lr = LinearRegression(fit_intercept=True).fit(Xn, y)
+    #             A = lr.coef_[0]
+    #             a = lr.intercept_
+    #             f_k = lr.predict(Xn)
+    #         else:
+    #             mu = self.minimize(f_k, A, a, alpha)
+    #             # eventually override the build_X1 method
+    #             Xn = self.build_Xn(f_k, A, alpha, mu)
+    #             lr = LinearRegression(fit_intercept=True).fit(Xn, y)
+    #             A = lr.coef_[0]
+    #             a = lr.intercept_
+    #             f_k = lr.predict(Xn)
+    #         mse = self.mse(f_k, y, m)
+    #         multi_coef_ = A.reshape((1, 3))
+    #         multi_coef_ = np.insert(multi_coef_, 0, a)
+    #         multi_coef_ = np.insert(multi_coef_, 0, mu)
+    #         self.multi_logging(multi_coef_, head_number)
+    #         i += 1
+    #     return mse, f_k
 
-    def add_layer(self, X, y, isFirstLayer):
+    def add_layer(self, X, y, isFirstLayer, f_k=0):
         if isFirstLayer:
             m = X.shape[0]
-            alpha = self.compute_alpha(X)
+            self.alpha = self.compute_alpha(X)
             self.lin_predictor.fit(X, y)
             f_k = self.lin_predictor.predict(X)
             self.lin_predictions = f_k
@@ -250,6 +251,10 @@ class DAN2Regressor(object):
             a = lr.intercept_
             f_k = lr.predict(Xn)
         else:
+            A = self.coef_[-1][2:5]
+            a = self.coef_[-1][1]
+            alpha = self.alpha
+
             mu = self.minimize(f_k, A, a, alpha)
             Xn = self.build_Xn(f_k, A, alpha, mu)
             lr = LinearRegression(fit_intercept=True).fit(Xn, y)
@@ -260,11 +265,12 @@ class DAN2Regressor(object):
         coef_ = np.insert(coef_, 0, a)
         coef_ = np.insert(coef_, 0, mu)
         self.logging(coef_)
+        return f_k
 
     def add_layer_multihead(self,X,y,head_number,f_k):
         A = self.coef_[-1][2:5]
         a = self.coef_[-1][1]
-        alpha = self.compute_alpha(X)
+        alpha = self.alpha
         mu=self.minimize (f_k, A, a, alpha)
         Xn = self.build_Xn(f_k, A, alpha, mu)
         lr = LinearRegression(fit_intercept=True).fit(Xn, y)
