@@ -208,6 +208,7 @@ class DAN2Regressor(object):
         m = X.shape[0]
         alpha = self.compute_alpha(X)
         f_k, i = prev_f_k[head_number*1654:(head_number+1)*1654], 1
+        print('-'*20, f_k)
         mu = np.random.random()
         while i <= head_depth:
             if i == 1:

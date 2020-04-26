@@ -78,11 +78,11 @@ if __name__ == '__main__':
     mse_list = []
     # tst_mse_list_1 = []
 
-    f_k, mse, clf = main(X_train_total, X_test_total, y_train_total ,y_test_total,20)
+    f_k, mse, clf = main(X_train_total, X_test_total, y_train_total ,y_test_total,30)
     # print ('-'*50, X_train, '-'*50, y_train_1, '-'*50, f_k, clf)
     mse_1, fk_1 = multi(X_train, y_train_1, 10, 0, f_k, clf)
     mse_2, fk_2 = multi(X_train, y_train_2, 20, 1, f_k, clf)
-    mse_3, fk_3 = multi(X_train, y_train_3, 15, 2, f_k, clf)
+    mse_3, fk_3 = multi(X_train, y_train_3, 20, 2, f_k, clf)
     mse_list.append((mse_1,mse_2,mse_3))
     tst_mse_1, perc_error_1 = test(X_test_total, y_test_total, 0, clf)
     tst_mse_2, perc_error_2 = test(X_test_total, y_test_total, 1, clf)

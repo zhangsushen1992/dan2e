@@ -1,3 +1,8 @@
+"""
+This file serves to optimise a structure with defined number of hidden layers
+"""
+
+
 # import dan2_original as dan2
 import dan2 as dan2
 import numpy as np
@@ -47,9 +52,9 @@ def test_fit_and_predict(training_preds, testing_preds):
 def main(X, X_test, y_train, y_test, depth):
     clf = dan2.DAN2Regressor(depth=depth)
     tr_pred = clf.fit(X_train, y_train)
-    path = clf.name
-    save_file(path, clf)
-    print(clf.coef_)
+    # path = clf.name
+    # save_file(path, clf)
+    # print(clf.coef_)
     y_pred = clf.predict(X_test)
     mse = np.sum((y_pred - y_test)**2) / X_test.shape[0]
     # print('True prediction is',y_test, 'Model predicts', y_pred)
